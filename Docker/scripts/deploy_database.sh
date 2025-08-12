@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Source environment variables unconditionally.
+source ./.env
+
 source ./Docker/scripts/env_functions.sh
 
 if [ "$DOCKER_ENV" != "true" ]; then
@@ -10,22 +13,26 @@ if [[ "$DATABASE_PROVIDER" == "postgresql" || "$DATABASE_PROVIDER" == "mysql" ||
     export DATABASE_URL
     echo "Deploying migrations for $DATABASE_PROVIDER"
     echo "Database URL: $DATABASE_URL"
-    # rm -rf ./prisma/migrations
-    # cp -r ./prisma/$DATABASE_PROVIDER-migrations ./prisma/migrations
-    npm run db:deploy
-    if [ $? -ne 0 ]; then
-        echo "Migration failed"
-        exit 1
-    else
-        echo "Migration succeeded"
-    fi
-    npm run db:generate
-    if [ $? -ne 0 ]; then
-        echo "Prisma generate failed"
-        exit 1
-    else
-        echo "Prisma generate succeeded"
-    fi
+
+    # Add a retry loop to give the database time to start.
+    RETRY_COUNT=0
+    MAX_RETRIES=10
+    
+    while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+        npm run db:deploy
+        if [ $? -eq 0 ]; then
+            echo "Prisma deploy succeeded"
+            exit 0 # Success, exit the script.
+        else
+            RETRY_COUNT=$((RETRY_COUNT+1))
+            echo "Prisma deploy failed, retrying in 5 seconds... ($RETRY_COUNT/$MAX_RETRIES)"
+            sleep 5 # Wait for 5 seconds before retrying.
+        fi
+    done
+
+    echo "Error: Prisma deploy failed after $MAX_RETRIES retries."
+    exit 1 # Failure, exit the script with an error.
+
 else
     echo "Error: Database provider $DATABASE_PROVIDER invalid."
     exit 1

@@ -1,5 +1,10 @@
 #!/bin/bash
 
+# Source the environment variables unconditionally,
+# since the Docker build will have the .env file available.
+source ./.env
+
+# The rest of the script remains the same.
 source ./Docker/scripts/env_functions.sh
 
 if [ "$DOCKER_ENV" != "true" ]; then

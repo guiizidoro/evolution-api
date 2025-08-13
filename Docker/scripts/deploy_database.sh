@@ -1,9 +1,11 @@
 #!/bin/bash
-
 # Source environment variables unconditionally.
 source ./.env
 
 source ./Docker/scripts/env_functions.sh
+
+echo "Listing /evolution/dist contents for debugging:"
+ls -l /evolution/dist
 
 if [ "$DOCKER_ENV" != "true" ]; then
     export_env_vars

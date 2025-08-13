@@ -155,4 +155,6 @@ async function bootstrap() {
   onUnexpectedError();
 }
 
+console.log('Bootstrapping Evolution API...');
 bootstrap();
+
